@@ -1,7 +1,8 @@
 # Senecessary (abandoned - please PR if you can fix it)
 A hack for Seneca to 100% any assignment.
 
-> [[!NOTE]]
+> [!NOTE] 
+> 
 > Requires a .env file with your JWT Seneca Token (TOKEN=...)
 > 
 > Also, this doesn't work... it fetches assignments but due to Seneca's complex API, I couldn't manage to figure it out.
