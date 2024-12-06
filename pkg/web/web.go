@@ -21,7 +21,7 @@ func StartMux() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, result, err := shared.DoReq[models.AssignmentResponse]("GET", "https://assignments.app.senecalearning.com/api/students/me/assignments?limit=100", nil)
+		_, result, err := shared.DoReq[models.AssignmentResponse]("GET", "https://assignments.app.senecalearning.com/api/students/me/assignments?limit=1000", nil)
 		if err != nil {
 			panic(err)
 		}
@@ -29,6 +29,35 @@ func StartMux() {
 		sort.Slice(result.Items, func(i, j int) bool {
 			return result.Items[i].DueDate.After(result.Items[j].DueDate)
 		})
+		if len(result.Items) > 4 {
+			result.Items = result.Items[:4]
+		}
+
+		// for each assignment, get the section names
+		// this requires calling:
+		// https://course.app.senecalearning.com/api/courses/{COURSE ID}/signed-url?sectionId={SECTION ID}&contentTypes=standard
+		// then calling the signed URL to get the section name (it's in the JSON response as url)
+		// then parsing the JSON response to Section struct
+		for i := range result.Items {
+			assignment := &result.Items[i]
+
+			var sections []models.Section
+			for _, sectionId := range assignment.Spec.SectionIds[:2] {
+				_, sectionURL, err := shared.DoReq[models.SectionSignedURLResponse]("GET", fmt.Sprintf("https://course.app.senecalearning.com/api/courses/%s/signed-url?sectionId=%s&contentTypes=standard", assignment.Spec.CourseId, sectionId), nil)
+				if err != nil {
+					panic(err)
+				}
+
+				_, section, err := shared.DoReq[models.Section]("GET", sectionURL.Url, nil)
+				if err != nil {
+					panic(err)
+				}
+
+				sections = append(sections, section)
+			}
+
+			assignment.Sections = sections
+		}
 
 		RenderTemplate(w, "index.html", map[string]interface{}{
 			"Assignments": result.Items,
@@ -57,12 +86,51 @@ func SolveAssignment(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	//
+
 	sessionId := uuid.New().String()
 	sessionReq := models.SessionRequest{
 		ClientVersion: "2.13.8",
 		Platform:      "seneca",
 
-		Modules: []models.Module{},
+		Modules: []models.Module{
+			{
+				ModuleId:  "1",
+				CourseId:  assignment.Spec.CourseId,
+				SectionId: assignment.Spec.SectionIds[0],
+				SessionId: sessionId,
+				Completed: true,
+				Score:     1,
+				Submitted: false,
+			},
+			{
+				ModuleId:  "2",
+				CourseId:  assignment.Spec.CourseId,
+				SectionId: assignment.Spec.SectionIds[0],
+				SessionId: sessionId,
+				Completed: true,
+				Score:     1,
+				Submitted: false,
+			},
+			{
+				ModuleId:  "3",
+				CourseId:  assignment.Spec.CourseId,
+				SectionId: assignment.Spec.SectionIds[0],
+				SessionId: sessionId,
+				Completed: true,
+				Score:     1,
+				Submitted: false,
+			},
+			{
+				ModuleId:  "4",
+				CourseId:  assignment.Spec.CourseId,
+				SectionId: assignment.Spec.SectionIds[0],
+				SessionId: sessionId,
+				Completed: true,
+				Score:     1,
+				Submitted: false,
+			},
+		},
 		Session: models.Session{
 			SessionId: sessionId,
 			CourseId:  assignment.Spec.CourseId,
@@ -76,7 +144,7 @@ func SolveAssignment(w http.ResponseWriter, r *http.Request) {
 			SessionScore: 1,
 
 			SectionIds: []string{
-				assignment.Spec.SectionIds[0],
+				assignment.Spec.SectionIds[3],
 			},
 			ContentIds: []string{},
 

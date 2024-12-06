@@ -30,7 +30,7 @@ func main() {
 	transport := &http.Transport{
 		Proxy: http.ProxyURL(&url.URL{
 			Scheme: "http",
-			Host:   "localhost:8082",
+			Host:   "localhost:8080",
 		}),
 		DisableKeepAlives: false,
 		TLSClientConfig: &tls.Config{

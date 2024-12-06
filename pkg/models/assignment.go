@@ -33,10 +33,24 @@ type Assignment struct {
 	Spec AssigmentSpec `json:"spec"`
 
 	Status Status `json:"status"`
+
+	Sections []Section // this isn't in seneca, we add this
 }
 
 type AssigmentSpec struct {
 	CourseId    string   `json:"courseId"`
 	SectionIds  []string `json:"sectionIds"`
 	QuestionIds []string `json:"questionId"`
+}
+
+type Section struct {
+	Id       string `json:"id"`
+	ParentId string `json:"parentId"`
+
+	Title  string `json:"title"`
+	Number string `json:"number"`
+}
+
+type SectionSignedURLResponse struct {
+	Url string `json:"url"`
 }
