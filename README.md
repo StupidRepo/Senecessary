@@ -5,5 +5,5 @@ A hack for Seneca to 100% any assignment.
 > 
 > Requires a .env file with your JWT Seneca Token (TOKEN=...)
 > 
-> Also, this doesn't work... it fetches assignments but due to Seneca's complex API, I couldn't manage to figure it out.
-> You need to supply it with a session with all the modules, and then set SessionScore to 1. I couldn't figure out how to get all the modules...
+> Also, this doesn't work... it fetches assignments but due to Seneca's complex API, I couldn't manage to figure out how to set them all to 100%.
+> You need to supply a session for each individual section with all the modules, and then set SessionScore to 1. I couldn't figure out how to get all the modules...
