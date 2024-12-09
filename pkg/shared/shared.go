@@ -4,18 +4,26 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/StupidRepo/Senecessary/pkg/models"
-	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/StupidRepo/Senecessary/pkg/models"
+	"github.com/google/uuid"
 )
 
 var Client http.Client
 var User models.User
 
+type URLs string
+
+const (
+	Courses_SectionsQuery URLs = "https://course-cdn-v2.app.senecalearning.com/api/courses/%s/sections?limit=3000"
+	User_MeQuery          URLs = "https://user-info.app.senecalearning.com/api/user-info/me"
+)
+
 func Login() *models.User {
-	res, result, err := DoReq[models.User]("GET", "https://user-info.app.senecalearning.com/api/user-info/me", nil)
+	res, result, err := DoReq[models.User]("GET", string(User_MeQuery), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -23,14 +31,16 @@ func Login() *models.User {
 	if res.StatusCode != 200 {
 		if res.StatusCode == 401 {
 			panic("Invalid token.")
-		} else {
-			panic("Error: " + res.Status)
 		}
-		return nil
+		panic("Error: " + res.Status)
 	}
 
 	User = result
 	return &result
+}
+
+func GetSectionsInCourse(courseUUID string) {
+
 }
 
 func DoReq[T any](method string, url string, body interface{}) (*http.Response, T, error) {
