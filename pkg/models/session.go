@@ -6,8 +6,8 @@ type SessionRequest struct {
 	ClientVersion string `json:"clientVersion"`
 	Platform      string `json:"platform"`
 
-	Modules []Module `json:"modules"`
-	Session Session  `json:"session"`
+	Modules []AnswerModule `json:"modules"`
+	Session Session        `json:"session"`
 
 	UserId string `json:"userId"`
 }
@@ -18,11 +18,11 @@ type Session struct {
 
 	Completed bool `json:"completed"`
 
-	SessionScore float64 `json:"sessionScore"` // set to 1 for 100% and max XP lmao
+	SessionScore float64 `json:"sessionScore"` // Set to 1 for 100% completion and max XP lmao
 	AverageScore float64 `json:"averageScore"`
 
 	StartingCourseProficiency float64 `json:"startingCourseProficiency"`
-	StartingProficiency       int     `json:"startingProficiency"`
+	StartingProficiency       float64 `json:"startingProficiency"`
 
 	EndingCourseProficiency float64 `json:"endingCourseProficiency"`
 	EndingCourseScore       float64 `json:"endingCourseScore"`

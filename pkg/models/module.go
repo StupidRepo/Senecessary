@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type Module struct {
+type AnswerModule struct {
 	ModuleId  string `json:"moduleId"`
 	ContentId string `json:"contentId"`
 	CourseId  string `json:"courseId"`

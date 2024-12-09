@@ -1,18 +1,19 @@
 package web
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/StupidRepo/Senecessary/pkg/models"
-	"github.com/StupidRepo/Senecessary/pkg/shared"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"html/template"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/StupidRepo/Senecessary/pkg/models"
+	"github.com/StupidRepo/Senecessary/pkg/shared"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 func StartMux() {
@@ -21,46 +22,37 @@ func StartMux() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, result, err := shared.DoReq[models.AssignmentResponse]("GET", "https://assignments.app.senecalearning.com/api/students/me/assignments?limit=1000", nil)
-		if err != nil {
-			panic(err)
-		}
+		assignments := shared.User.Assignments
 
-		sort.Slice(result.Items, func(i, j int) bool {
-			return result.Items[i].DueDate.After(result.Items[j].DueDate)
+		sort.Slice(assignments, func(i, j int) bool {
+			return assignments[i].DueDate.After(assignments[j].DueDate)
 		})
-		if len(result.Items) > 4 {
-			result.Items = result.Items[:4]
+		if len(assignments) > 4 {
+			assignments = assignments[:4]
 		}
 
-		// for each assignment, get the section names
-		// this requires calling:
-		// https://course.app.senecalearning.com/api/courses/{COURSE ID}/signed-url?sectionId={SECTION ID}&contentTypes=standard
-		// then calling the signed URL to get the section name (it's in the JSON response as url)
-		// then parsing the JSON response to Section struct
-		for i := range result.Items {
-			assignment := &result.Items[i]
+		for i := range assignments {
+			assignment := &assignments[i]
 
 			var sections []models.Section
-			for _, sectionId := range assignment.Spec.SectionIds[:2] {
-				_, sectionURL, err := shared.DoReq[models.SectionSignedURLResponse]("GET", fmt.Sprintf("https://course.app.senecalearning.com/api/courses/%s/signed-url?sectionId=%s&contentTypes=standard", assignment.Spec.CourseId, sectionId), nil)
-				if err != nil {
-					panic(err)
-				}
+			allSections, err := shared.GetSectionsInCourse(assignment.Spec.CourseId)
+			if err != nil {
+				panic(err)
+			}
 
-				_, section, err := shared.DoReq[models.Section]("GET", sectionURL.Url, nil)
-				if err != nil {
-					panic(err)
+			for _, section := range *allSections {
+				for _, id := range assignment.Spec.SectionIds {
+					if section.Id == id {
+						sections = append(sections, section)
+					}
 				}
-
-				sections = append(sections, section)
 			}
 
 			assignment.Sections = sections
 		}
 
 		RenderTemplate(w, "index.html", map[string]interface{}{
-			"Assignments": result.Items,
+			"Assignments": assignments,
 		})
 	})
 	r.HandleFunc("/solve", SolveAssignment)
@@ -78,22 +70,27 @@ func SolveAssignment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+	assignmentId := string(body)
 
-	// parse body as assignment
-	assignment := models.Assignment{}
-	err = json.Unmarshal(body, &assignment)
-	if err != nil {
-		panic(err)
+	var assignment *models.Assignment
+	for i := range shared.User.Assignments {
+		if shared.User.Assignments[i].Id == assignmentId {
+			assignment = &shared.User.Assignments[i]
+			break
+		}
+	}
+	if assignment == nil {
+		panic("Assignment not found with ID " + assignmentId)
 	}
 
-	//
+	fmt.Println("Solving assignment", assignment.Id)
 
 	sessionId := uuid.New().String()
 	sessionReq := models.SessionRequest{
 		ClientVersion: "2.13.8",
 		Platform:      "seneca",
 
-		Modules: []models.Module{
+		Modules: []models.AnswerModule{
 			{
 				ModuleId:  "1",
 				CourseId:  assignment.Spec.CourseId,
@@ -151,7 +148,7 @@ func SolveAssignment(w http.ResponseWriter, r *http.Request) {
 			SessionType: "adaptive",
 
 			TimeStarted:  time.Now(),
-			TimeFinished: time.Now().Add(time.Minute * 7),
+			TimeFinished: time.Now().Add(time.Duration(rand.Float64() * (float64(time.Minute) * 8))),
 		},
 
 		UserId: assignment.UserId,

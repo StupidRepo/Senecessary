@@ -43,14 +43,6 @@ type AssigmentSpec struct {
 	QuestionIds []string `json:"questionId"`
 }
 
-type Section struct {
-	Id       string `json:"id"`
-	ParentId string `json:"parentId"`
-
-	Title  string `json:"title"`
-	Number string `json:"number"`
-}
-
 type SectionSignedURLResponse struct {
 	Url string `json:"url"`
 }

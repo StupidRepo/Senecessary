@@ -39,4 +39,6 @@ type User struct {
 	Type   string `json:"type"`
 	Upn    string `json:"upn"`
 	UserId string `json:"userId"`
+
+	Assignments []Assignment // Not from API, used for frontend
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/StupidRepo/Senecessary/pkg/models"
@@ -39,8 +40,18 @@ func Login() *models.User {
 	return &result
 }
 
-func GetSectionsInCourse(courseUUID string) {
+func GetSectionsInCourse(CourseId string) (*[]models.Section, error) {
+	_, result, err := DoReq[models.CoursesSectionsResponse]("GET", fmt.Sprintf(string(Courses_SectionsQuery), CourseId), nil)
+	if err != nil {
+		return nil, err
+	}
 
+	sections := result.Sections
+	sort.Slice(sections, func(i, j int) bool {
+		return sections[i].Number < sections[j].Number
+	})
+
+	return &sections, nil
 }
 
 func DoReq[T any](method string, url string, body interface{}) (*http.Response, T, error) {
