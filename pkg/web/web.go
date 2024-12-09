@@ -56,6 +56,10 @@ func StartMux() {
 		})
 	})
 	r.HandleFunc("/solve", SolveAssignment)
+	r.HandleFunc("/refresh", func(w http.ResponseWriter, r *http.Request) {
+		shared.RefreshAssessments()
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
 
 	http.Handle("/", ErrMiddleware(r))
 	err := http.ListenAndServe(":2020", nil)
@@ -154,7 +158,7 @@ func SolveAssignment(w http.ResponseWriter, r *http.Request) {
 		UserId: assignment.UserId,
 	}
 
-	res, _, err := shared.DoReq[any]("POST", "https://stats.app.senecalearning.com/api/stats/sessions", sessionReq)
+	res, _, err := shared.DoReq[any]("POST", string(shared.Sessions_Submit), sessionReq)
 	if err != nil {
 		panic(err)
 	}

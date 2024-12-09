@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/StupidRepo/Senecessary/pkg/models"
 	"github.com/StupidRepo/Senecessary/pkg/shared"
 	"github.com/StupidRepo/Senecessary/pkg/web"
 	"github.com/joho/godotenv"
@@ -69,12 +68,7 @@ func main() {
 	if user := shared.Login(); user != nil {
 		fmt.Printf("Successfully logged in as %s!\n", cases.Title(language.Und).String(user.DisplayName))
 
-		_, result, err := shared.DoReq[models.AssignmentResponse]("GET", "https://assignments.app.senecalearning.com/api/students/me/assignments?limit=1000", nil)
-		if err != nil {
-			panic(err)
-		}
-
-		shared.User.Assignments = result.Items
+		shared.RefreshAssessments()
 		web.StartMux()
 	} else {
 		fmt.Println("Failed to login!")
