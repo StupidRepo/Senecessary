@@ -90,6 +90,7 @@ func SolveAssignment(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Solving assignment", assignment.Id)
 
 	sessionId := uuid.New().String()
+	sectionId := assignment.Spec.SectionIds[0]
 	sessionReq := models.SessionRequest{
 		ClientVersion: "2.13.8",
 		Platform:      "seneca",

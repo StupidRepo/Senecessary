@@ -7,6 +7,10 @@ type CoursesSectionsResponse struct {
 	Count int `json:"count"`
 }
 
+type GetSignedCourseURLResponse struct {
+	URL string `json:"url"`
+}
+
 type Course struct {
 	ID       string `json:"id"`
 	CourseID string `json:"courseId"`

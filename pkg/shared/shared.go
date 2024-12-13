@@ -19,9 +19,11 @@ var User models.User
 type URLs string
 
 const (
-	Courses_SectionsQuery URLs = "https://course-cdn-v2.app.senecalearning.com/api/courses/%s/sections?limit=3000"
-	User_MeQuery          URLs = "https://user-info.app.senecalearning.com/api/user-info/me"
-	Sessions_Submit       URLs = "https://stats.app.senecalearning.com/api/stats/sessions"
+	Courses_SectionsQuery  URLs = "https://course-cdn-v2.app.senecalearning.com/api/courses/%s/sections?limit=3000"
+	Courses_SignedUrlQuery URLs = "https://course.app.senecalearning.com/api/courses/%s/signed-url?sectionId=%s&contentTypes=standard"
+
+	User_MeQuery    URLs = "https://user-info.app.senecalearning.com/api/user-info/me"
+	Sessions_Submit URLs = "https://stats.app.senecalearning.com/api/stats/sessions"
 )
 
 func Login() *models.User {

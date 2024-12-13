@@ -15,7 +15,7 @@ type AnswerModule struct {
 	Completed bool `json:"completed"`
 	GaveUp    bool `json:"gaveUp"`
 
-	Content struct{} `json:"content"`
+	Contents []struct{} `json:"contents"`
 
 	Score     int  `json:"score"`
 	Submitted bool `json:"submitted"`
