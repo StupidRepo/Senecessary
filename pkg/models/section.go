@@ -11,5 +11,8 @@ type Section struct {
 	ModuleIds  []string `json:"moduleIds"`
 	ContentIds []string `json:"contentIds"`
 
-	Contents []AnswerModule `json:"contents"` // FIXME: This should be a different struct called ContentModule as AnswerModule and ContentModule are different
+	Contents []SectionContent `json:"contents"`
+}
+
+type SectionContent struct {
 }

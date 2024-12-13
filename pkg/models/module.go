@@ -25,3 +25,5 @@ type AnswerModule struct {
 	TimeFinished time.Time `json:"timeFinished"`
 	TimeStarted  time.Time `json:"timeStarted"`
 }
+
+type 
