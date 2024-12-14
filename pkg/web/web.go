@@ -6,8 +6,8 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"os"
 	"path/filepath"
-	"sort"
 	"time"
 
 	"github.com/StupidRepo/Senecessary/pkg/models"
@@ -23,33 +23,6 @@ func StartMux() {
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		assignments := shared.User.Assignments
-
-		sort.Slice(assignments, func(i, j int) bool {
-			return assignments[i].DueDate.After(assignments[j].DueDate)
-		})
-		if len(assignments) > 4 {
-			assignments = assignments[:4]
-		}
-
-		for i := range assignments {
-			assignment := &assignments[i]
-
-			var sections []models.Section
-			allSections, err := shared.GetSectionsInCourse(assignment.Spec.CourseId)
-			if err != nil {
-				panic(err)
-			}
-
-			for _, section := range *allSections {
-				for _, id := range assignment.Spec.SectionIds {
-					if section.Id == id {
-						sections = append(sections, section)
-					}
-				}
-			}
-
-			assignment.Sections = sections
-		}
 
 		RenderTemplate(w, "index.html", map[string]interface{}{
 			"Assignments": assignments,
@@ -87,85 +60,97 @@ func SolveAssignment(w http.ResponseWriter, r *http.Request) {
 		panic("Assignment not found with ID " + assignmentId)
 	}
 
-	fmt.Println("Solving assignment", assignment.Id)
+	fmt.Println("Solving assignment", assignment.Id, "with", len(assignment.Sections), "section(s)!")
+	if os.Getenv("FORCE_SOLVE") != "true" {
+		fmt.Println("Uh... there's a problem")
 
-	sessionId := uuid.New().String()
-	sectionId := assignment.Spec.SectionIds[0]
-	sessionReq := models.SessionRequest{
-		ClientVersion: "2.13.8",
-		Platform:      "seneca",
+		fmt.Println("")
+		fmt.Println("__SO WHAT IS THE PROBLEM?__")
+		fmt.Println("Basically, the code that runs below these messages (method: web.SolveAssignment()) sends a lot of API requests to Seneca, which don't currently set the completion of a section to 100%.")
+		fmt.Println("The issue we are running into is that the API requests don't specify a proper user answer to the questions, so the completion of the section doesn't get set to 100%.")
+		fmt.Println("If you have any Golang experience and are willing to look into the Seneca API, please consider PRing a fix to this issue.")
+		fmt.Println("I honestly have no idea how to go about implementing fake answers for every different answer type (wordfill, toggles, etc.), so I'm stuck.")
 
-		Modules: []models.AnswerModule{
-			{
-				ModuleId:  "1",
-				CourseId:  assignment.Spec.CourseId,
-				SectionId: assignment.Spec.SectionIds[0],
-				SessionId: sessionId,
-				Completed: true,
-				Score:     1,
-				Submitted: false,
-			},
-			{
-				ModuleId:  "2",
-				CourseId:  assignment.Spec.CourseId,
-				SectionId: assignment.Spec.SectionIds[0],
-				SessionId: sessionId,
-				Completed: true,
-				Score:     1,
-				Submitted: false,
-			},
-			{
-				ModuleId:  "3",
-				CourseId:  assignment.Spec.CourseId,
-				SectionId: assignment.Spec.SectionIds[0],
-				SessionId: sessionId,
-				Completed: true,
-				Score:     1,
-				Submitted: false,
-			},
-			{
-				ModuleId:  "4",
-				CourseId:  assignment.Spec.CourseId,
-				SectionId: assignment.Spec.SectionIds[0],
-				SessionId: sessionId,
-				Completed: true,
-				Score:     1,
-				Submitted: false,
-			},
-		},
-		Session: models.Session{
-			SessionId: sessionId,
-			CourseId:  assignment.Spec.CourseId,
-
-			Completed: true,
-
-			ModulesCorrect: 20,
-			ModulesStudied: 20,
-			ModulesTested:  20,
-
-			SessionScore: 1,
-
-			SectionIds: []string{
-				assignment.Spec.SectionIds[3],
-			},
-			ContentIds: []string{},
-
-			SessionType: "adaptive",
-
-			TimeStarted:  time.Now(),
-			TimeFinished: time.Now().Add(time.Duration(rand.Float64() * (float64(time.Minute) * 8))),
-		},
-
-		UserId: assignment.UserId,
+		fmt.Println("")
+		fmt.Println("Anyway, like I said, please PR a fix if you can. Thanks!")
+		return
 	}
+	for _, section := range assignment.Sections {
+		sessionId := uuid.New().String()
+		contentModules, err := shared.GetModulesInSection(assignment.Spec.CourseId, section.Id)
+		if err != nil {
+			panic(err)
+		}
 
-	res, _, err := shared.DoReq[any]("POST", string(shared.Sessions_Submit), sessionReq)
-	if err != nil {
-		panic(err)
-	}
+		fmt.Println("Solving section", section.Id)
 
-	if res.StatusCode != 200 {
-		panic("Error: " + res.Status)
+		var answerModules []models.AnswerModule
+
+		for i, module := range *contentModules {
+			fmt.Printf("Solving module %s\n", module.Id)
+			answerModule := models.AnswerModule{
+				ModuleId:    module.Id,
+				ContentId:   module.ParentId,
+				CourseId:    module.CourseId,
+				SectionId:   section.Id,
+				SessionId:   sessionId,
+				ModuleType:  module.ModuleType,
+				ModuleOrder: i,
+				ModuleScore: models.AnswerModuleScore{
+					Score: 1,
+				},
+				Content:       []struct{}{},
+				TestingActive: true,
+				Completed:     true,
+				Submitted:     true,
+				Score:         1,
+				TimeStarted:   time.Now(),
+				TimeFinished:  time.Now().Add(time.Duration(rand.Float64() * (float64(time.Minute) * 8))),
+			}
+			answerModules = append(answerModules, answerModule)
+		}
+
+		sessionReq := models.SessionRequest{
+			ClientVersion: "2.13.8",
+			Platform:      "seneca",
+
+			Modules: answerModules,
+			Session: models.Session{
+				SessionId: sessionId,
+				CourseId:  assignment.Spec.CourseId,
+
+				Completed: true,
+
+				ModulesCorrect: 20,
+				ModulesStudied: 20,
+				ModulesTested:  20,
+
+				SessionScore: 1,
+
+				SectionIds: []string{
+					section.Id,
+				},
+				ContentIds: []string{},
+
+				SessionType: "adaptive",
+
+				TimeStarted:  time.Now(),
+				TimeFinished: time.Now().Add(time.Duration(rand.Float64() * (float64(time.Minute) * 8))),
+			},
+
+			UserId: assignment.UserId,
+		}
+
+		res, _, err := shared.DoReq[any]("POST", string(shared.Sessions_Submit), sessionReq)
+		if err != nil {
+			fmt.Print(err)
+			panic(err)
+		}
+
+		if res.StatusCode != 200 {
+			fmt.Print(res.Status)
+			panic("Error: " + res.Status)
+		}
 	}
 
 	RenderTemplate(w, "assignment.html", nil)

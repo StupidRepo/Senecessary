@@ -15,4 +15,6 @@ type Section struct {
 }
 
 type SectionContent struct {
+	Id             string          `json:"id"`
+	ContentModules []ContentModule `json:"contentModules"`
 }

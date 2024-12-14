@@ -49,6 +49,33 @@ func RefreshAssessments() {
 		panic(err)
 	}
 
+	sort.Slice(result.Items, func(i, j int) bool {
+		return result.Items[i].DueDate.After(result.Items[j].DueDate)
+	})
+	if len(result.Items) > 4 {
+		result.Items = result.Items[:4]
+	}
+
+	for i := range result.Items {
+		assignment := &result.Items[i]
+
+		var sections []models.Section
+		allSections, err := GetSectionsInCourse(assignment.Spec.CourseId)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, section := range *allSections {
+			for _, id := range assignment.Spec.SectionIds {
+				if section.Id == id {
+					sections = append(sections, section)
+				}
+			}
+		}
+
+		assignment.Sections = sections
+	}
+
 	User.Assignments = result.Items
 }
 
@@ -64,6 +91,20 @@ func GetSectionsInCourse(CourseId string) (*[]models.Section, error) {
 	})
 
 	return &sections, nil
+}
+
+func GetModulesInSection(courseId, sectionId string) (*[]models.ContentModule, error) {
+	_, signedUrl, err := DoReq[models.GetSignedCourseURLResponse]("GET", fmt.Sprintf(string(Courses_SignedUrlQuery), courseId, sectionId), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	_, content, err := DoReq[models.Section]("GET", signedUrl.URL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &content.Contents[0].ContentModules, nil
 }
 
 func DoReq[T any](method string, url string, body interface{}) (*http.Response, T, error) {
@@ -100,6 +141,10 @@ func DoReq[T any](method string, url string, body interface{}) (*http.Response, 
 		return nil, result, err
 	}
 	defer res.Body.Close()
+
+	if res.ContentLength == 0 {
+		return res, result, nil
+	}
 
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return nil, result, err

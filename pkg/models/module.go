@@ -15,10 +15,11 @@ type AnswerModule struct {
 	Completed bool `json:"completed"`
 	GaveUp    bool `json:"gaveUp"`
 
-	Contents []struct{} `json:"contents"`
+	Content []struct{} `json:"content"`
 
-	Score     int  `json:"score"`
-	Submitted bool `json:"submitted"`
+	Score       int               `json:"score"`
+	ModuleScore AnswerModuleScore `json:"moduleScore"`
+	Submitted   bool              `json:"submitted"`
 
 	TestingActive bool `json:"testingActive"`
 
@@ -26,4 +27,24 @@ type AnswerModule struct {
 	TimeStarted  time.Time `json:"timeStarted"`
 }
 
-type 
+type AnswerModuleScore struct {
+	Score int `json:"score"`
+}
+
+type ContentModule struct {
+	/*
+			EXAMPLE DATA
+			            "courseId": "ddff7b40-4794-11e8-840f-39fdc9615de8",
+	                    "id": "3ab631a0-4c7a-11e8-b481-f529820d2afa",
+	                    "moduleDifficulty": 1,
+	                    "moduleType": "concept",
+	                    "parentId": "7e4f7350-4c79-11e8-b481-f529820d2afa"
+	*/
+
+	Id       string `json:"id"`
+	ParentId string `json:"parentId"`
+	CourseId string `json:"courseId"`
+
+	ModuleDifficulty int    `json:"moduleDifficulty"`
+	ModuleType       string `json:"moduleType"`
+}
